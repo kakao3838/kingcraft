@@ -3,74 +3,638 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>KING 해커톤 · 배포 확인</title>
+  <title>제로 클락</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #eef1eb; color: #17241c; font-family: system-ui, "Malgun Gothic", sans-serif; }
-    main { width: min(100%, 720px); padding: clamp(24px, 5vw, 48px); border: 1px solid #00462a; border-radius: 8px; background: white; }
-    .label { margin: 0 0 24px; color: #00462a; font-size: 14px; font-weight: 700; }
-    h1 { margin: 0 0 16px; font-size: clamp(28px, 6vw, 42px); }
-    p { line-height: 1.7; }
-    #stage { display: grid; place-items: center; min-height: 180px; margin: 28px 0 20px; padding: 24px; background: #f3f5f1; border: 1px solid #d8ded7; text-align: center; }
-    #message { margin: 0; }
-    .buttons { display: flex; flex-wrap: wrap; gap: 12px; }
-    button { padding: 12px 20px; border: 1px solid #00462a; border-radius: 4px; background: #00462a; color: white; font: inherit; cursor: pointer; }
-    #restart { background: white; color: #00462a; }
-    button:disabled { opacity: .4; cursor: default; }
-    button:focus-visible { outline: 3px solid #69a58c; outline-offset: 4px; }
-    .guide { margin-top: 28px; padding: 24px; border: 1px solid #d8ded7; background: #f8faf6; }
-    .guide h2 { margin: 0 0 12px; font-size: 22px; }
-    .guide li { margin: 10px 0; line-height: 1.7; }
-    .sheet-link { display: inline-block; margin-top: 8px; padding: 12px 18px; background: #00462a; color: white; border-radius: 4px; text-decoration: none; }
-    .sheet-link:focus-visible { outline: 3px solid #69a58c; outline-offset: 4px; }
-    .note { margin-top: 28px; padding-top: 20px; border-top: 1px solid #d8ded7; color: #68746b; font-size: 14px; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #0e1410; color: #e6efe8; font-family: system-ui, "Malgun Gothic", sans-serif; }
+    main { width: min(100%, 560px); text-align: center; }
+    .label { margin: 0 0 8px; color: #6fd3a0; font-size: 14px; font-weight: 700; letter-spacing: .08em; }
+    h1 { margin: 0 0 20px; font-size: clamp(26px, 6vw, 36px); }
+    .stats { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 15px; color: #9db0a3; }
+    .stats b { color: #e6efe8; }
+    #clock { margin: 8px 0 16px; padding: 24px 12px; border: 2px solid #1f3a2b; border-radius: 12px; background: #050805; color: #5dff9d; font-family: "Courier New", monospace; font-size: clamp(64px, 18vw, 112px); font-weight: 700; letter-spacing: .06em; text-shadow: 0 0 18px rgba(93, 255, 157, .55); }
+    #bar { height: 10px; border-radius: 5px; background: #1a261f; overflow: hidden; }
+    #fill { height: 100%; width: 100%; background: #5dff9d; transition: width .1s linear; }
+    #fill.low { background: #ff6b5e; }
+    #timeText { margin: 6px 0 16px; font-size: 14px; color: #9db0a3; }
+    form { display: flex; gap: 8px; }
+    input { flex: 1; min-width: 0; padding: 14px; border: 1px solid #2c4a39; border-radius: 6px; background: #121c16; color: inherit; font: inherit; font-size: 20px; text-align: center; }
+    input:focus-visible, button:focus-visible { outline: 3px solid #69a58c; outline-offset: 2px; }
+    button { padding: 12px 18px; border: 1px solid #2f8f5d; border-radius: 6px; background: #2f8f5d; color: white; font: inherit; cursor: pointer; }
+    button.ghost { background: #121c16; color: #cfe6d8; border-color: #2c4a39; }
+    #helpers { display: flex; justify-content: center; gap: 8px; margin: 4px 0 6px; }
+    #helpers button:disabled { opacity: .4; cursor: default; }
+    #pad { display: flex; justify-content: center; gap: 8px; margin: 10px 0; }
+    #pad button { width: 54px; padding: 10px 0; font-size: 20px; }
+    #msg { min-height: 1.6em; margin: 12px 0; color: #9db0a3; }
+    #msg.ok { color: #5dff9d; }
+    #msg.bad { color: #ff9a8f; }
+    #entry { display: flex; gap: 8px; }
+    #clock.flash { animation: flash .6s ease-out; }
+    #clock.shake { animation: shake .3s; }
+    #clock.warn { color: #ff6b5e; border-color: #7a2a24; text-shadow: 0 0 18px rgba(255, 107, 94, .6); animation: pulse 1s ease-in-out infinite; }
+    @keyframes flash { 0% { background: #5dff9d; color: #050805; box-shadow: 0 0 40px #5dff9d; } 100% { background: #050805; box-shadow: none; } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+    @media (prefers-reduced-motion: reduce) { #clock.flash, #clock.shake, #clock.warn { animation: none; } }
+    #sound { margin-top: 12px; font-size: 13px; padding: 6px 12px; }
+    .ranking { margin-top: 28px; padding: 16px 18px; border: 1px solid #1f3a2b; border-radius: 8px; text-align: left; }
+    .ranking h2 { margin: 0 0 4px; font-size: 16px; }
+    .ranking .src { margin: 0 0 10px; font-size: 12px; color: #6f8277; }
+    .ranking ol { margin: 0; padding-left: 28px; line-height: 1.9; }
+    .ranking li { color: #cfe6d8; }
+    .ranking li.me { color: #5dff9d; font-weight: 700; }
+    .ranking li span { float: right; }
+    .ranking .empty { color: #6f8277; list-style: none; margin-left: -28px; }
+    #over { display: none; margin-top: 8px; padding: 20px; border: 1px solid #5a2a26; border-radius: 8px; background: #1c1210; }
+    #over h2 { margin: 0 0 8px; }
+    .rules { margin-top: 28px; padding: 16px 18px; border: 1px solid #1f3a2b; border-radius: 8px; text-align: left; font-size: 14px; line-height: 1.7; color: #9db0a3; }
+    .rules h2 { margin: 0 0 6px; font-size: 16px; color: #e6efe8; }
+    .rules ul { margin: 0; padding-left: 20px; }
   </style>
 </head>
 <body>
   <main>
     <p class="label">KING · 바이브코딩 해커톤</p>
-    <!-- 사전 수정 연습: 아래 제목을 원하는 문구로 바꿔 보세요. -->
-    <h1>해커톤 준비 완료</h1>
-    <p>이 화면이 GitHub Pages 공개 주소에서 보이면 배포에 성공한 것입니다.<br>시작 버튼을 눌러 기본 동작도 확인해 주세요.</p>
-    <section id="stage" aria-label="실행 확인 화면" aria-live="polite">
-      <p id="message">시작 버튼을 눌러 주세요.</p>
-    </section>
-    <div class="buttons">
-      <button id="start" type="button">시작</button>
-      <button id="restart" type="button" disabled>다시 시작</button>
+    <h1>제로 클락</h1>
+    <div class="stats">
+      <span>클리어 <b id="score">0</b></span>
+      <span>내 최고 <b id="best">0</b></span>
     </div>
-    <section class="guide" aria-labelledby="guide-title">
-      <h2 id="guide-title">참가자 정보 사전 입력</h2>
-      <p>정기 모임 전에 GitHub와 Skeam 계정을 만들고, 아래 스프레드시트에 본인 정보를 미리 기재해 주세요.</p>
-      <ol>
-        <li><strong>GitHub 계정:</strong> 계정을 생성하고 이메일 인증을 완료합니다. 공개 저장소를 만들고 이 파일을 GitHub Pages에 배포해 봅니다.</li>
-        <li><strong>Skeam 계정:</strong> 계정을 생성하고 행사에 사용할 기기에서 로그인을 확인합니다.</li>
-        <li><strong>스프레드시트:</strong> 빈 행 하나에 이름, Skeam 닉네임, 참여 여부, 사용할 AI·제작 도구를 입력합니다. 이미 본인 행이 있다면 해당 행을 수정합니다.</li>
-        <li><strong>행사 후 입력:</strong> 작품명과 Skeam 링크를 입력합니다. 아직 만들지 않은 작품 정보와 링크는 비워 두어도 됩니다.</li>
-      </ol>
-      <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/1eLqrOtpMhR3VfCOIV-9_RNtlB1wUtHm_m6aK4ziDUH8/edit?usp=sharing" target="_blank" rel="noopener noreferrer">참가자 정보 입력 시트 열기 ↗</a>
-      <p style="font-size:14px;color:#68746b">다른 참가자의 행은 수정하지 마세요. 비밀번호·API 키는 기재하지 않습니다. 사전 준비·출석·제출 상태·실행 확인은 운영진이 관리합니다.</p>
+    <div id="clock" aria-live="polite">--:--</div>
+    <div id="bar"><div id="fill"></div></div>
+    <p id="timeText">&nbsp;</p>
+    <form id="form" autocomplete="off">
+      <input id="expr" type="text" inputmode="text" placeholder="예: 6-3-3" aria-label="수식 입력" disabled>
+      <button id="submit" type="submit" disabled>확인</button>
+    </form>
+    <div id="pad" aria-label="기호 입력">
+      <button type="button" class="ghost" data-ins="+">+</button>
+      <button type="button" class="ghost" data-ins="-">−</button>
+      <button type="button" class="ghost" data-ins="*">×</button>
+      <button type="button" class="ghost" data-ins="/">÷</button>
+      <button type="button" class="ghost" data-ins="(">(</button>
+      <button type="button" class="ghost" data-ins=")">)</button>
+    </div>
+    <div id="helpers">
+      <button id="skip" type="button" class="ghost" disabled>스킵 (3)</button>
+      <button id="extra" type="button" class="ghost" disabled>+30초 (3)</button>
+    </div>
+    <p id="msg">닉네임을 입력하고 시작해 주세요.</p>
+    <div id="entry">
+      <input id="nick" type="text" maxlength="10" placeholder="닉네임 (10자 이하)" aria-label="닉네임" autocomplete="off">
+      <button id="start" type="button">시작</button>
+    </div>
+    <section id="over">
+      <h2>게임 오버</h2>
+      <p id="overText"></p>
+      <button id="restart" type="button">다시 시작</button>
     </section>
-    <p class="note">이 파일은 배포 연습용 기본 틀입니다. 실제 게임 규칙과 조작은 당일 추가하세요.<br>사전 연습: 제목을 수정해 다시 올린 뒤 공개 페이지에도 반영되는지 확인합니다.</p>
+    <button id="sound" type="button" class="ghost" aria-pressed="true">🔊 소리 켜짐</button>
+    <section class="ranking" aria-labelledby="rank-title">
+      <h2 id="rank-title">랭킹 TOP 10</h2>
+      <p class="src" id="rankSrc">불러오는 중…</p>
+      <button id="rankRetry" type="button" class="ghost" style="display:none;margin-bottom:8px;font-size:13px;padding:6px 12px">다시 시도</button>
+      <ol id="rankList"></ol>
+    </section>
+    <section class="rules">
+      <h2>규칙</h2>
+      <ul>
+        <li>시계의 <b>시</b>와 <b>분</b> 숫자를 사칙연산(+ − × ÷)과 괄호로 계산해 결과를 <b>0</b>으로 만드세요.</li>
+        <li>시계에 나온 숫자만 쓸 수 있어요. 04:36이면 4, <b>36</b>, 3, 6 중에서(09:30이면 9, 30, 3) 골라 쓰고, 같은 숫자를 <b>몇 번이든</b> 써도 돼요. 다 쓸 필요는 없어요. (0은 못 써요)</li>
+        <li>쓸 수 있는 숫자가 2개 이하인 시각(예: 03:08)은 숫자를 이어 붙인 <b>38, 83</b> 같은 두 자리 수도 쓸 수 있어요.</li>
+        <li>6-6+18-18처럼 값과 상관없이 항상 0이 되는 식, 또는 정답 뒤에 <code>+6-6</code>을 붙이는 식처럼 중간에 0이 되는 부분(6-6 등)이 있는 식은 인정되지 않아요.</li>
+        <li>곱셈을 같은 숫자의 반복 뺄셈으로 그냥 지우는 식(<code>5*4-4-4-4-4-4</code>처럼 <code>h*m-m-m-…-m</code>)도 인정되지 않아요.</li>
+        <li>예) 04:36 → <code>6-3-3</code> = 0. 클리어하면 다음 시각으로 넘어가요.</li>
+        <li>막히면 게임당 <b>스킵 3번</b>(새 시각으로 교체), <b>+30초 3번</b>(남은 시간 추가)을 쓸 수 있어요.</li>
+        <li>제한 시간은 매 문제 30초예요. 시간이 다 되면 게임 오버예요.</li>
+      </ul>
+    </section>
   </main>
   <script>
     // 외부 라이브러리 없이 이 파일 하나로 실행됩니다.
-    const message = document.getElementById('message');
-    const start = document.getElementById('start');
-    const restart = document.getElementById('restart');
-    start.addEventListener('click', () => {
-      message.textContent = '시작 버튼이 정상적으로 작동합니다. 다시 시작 버튼도 확인해 주세요.';
-      start.disabled = true;
-      restart.disabled = false;
-      restart.focus();
+    const $ = id => document.getElementById(id);
+    const clockEl = $('clock'), fillEl = $('fill'), timeText = $('timeText');
+    const exprEl = $('expr'), submitEl = $('submit'), msgEl = $('msg');
+    const startEl = $('start'), overEl = $('over'), nickEl = $('nick'), entryEl = $('entry');
+
+    const TIME_LIMIT = 30, WARN_SECONDS = 10, TICK_SECONDS = 5, HELP_USES = 3, EXTRA_SECONDS = 30;
+    // 공유 랭킹용 Google Apps Script 웹 앱 주소(ranking-apps-script.gs 참고). 비워 두면 이 브라우저에만 저장한다.
+    const RANKING_URL = 'https://script.google.com/macros/s/AKfycbwklo1Ay4xC8ADGphzQ7SNO4QJDxRdN4X9OJ-TjTT5UhwqA6t6JsuwpGwllGFHIUBBwIA/exec';
+    let hour = 0, minute = 0, score = 0, limit = TIME_LIMIT;
+    let deadline = 0, timerId = null, playing = false, lastSec = -1, nick = '';
+    let skipsLeft = HELP_USES, extraLeft = HELP_USES;
+
+    // ---- 효과음 (WebAudio, 외부 파일 없음) ----
+    let audio = null;
+    let muted = false;
+    try { muted = localStorage.getItem('zeroClockMuted') === '1'; } catch (e) { /* 저장 불가 환경 */ }
+    function ensureAudio() {
+      try {
+        if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+        if (audio.state === 'suspended') audio.resume();
+      } catch (e) { audio = null; }
+    }
+    function beep(freq, at, dur, type, vol) {
+      if (muted || !audio) return;
+      const t = audio.currentTime + at, o = audio.createOscillator(), g = audio.createGain();
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(vol, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(g); g.connect(audio.destination);
+      o.start(t); o.stop(t + dur);
+    }
+    const sfx = {
+      clear: () => [523, 659, 784, 1047].forEach((f, i) => beep(f, i * 0.07, 0.16, 'sine', 0.18)),
+      wrong: () => beep(150, 0, 0.22, 'square', 0.08),
+      tick: () => beep(880, 0, 0.07, 'square', 0.06),
+      help: () => [660, 880].forEach((f, i) => beep(f, i * 0.06, 0.1, 'triangle', 0.12)),
+      over: () => [392, 330, 262].forEach((f, i) => beep(f, i * 0.2, 0.28, 'sawtooth', 0.1))
+    };
+    function renderSound() {
+      $('sound').textContent = muted ? '🔇 소리 꺼짐' : '🔊 소리 켜짐';
+      $('sound').setAttribute('aria-pressed', String(!muted));
+    }
+    $('sound').addEventListener('click', () => {
+      muted = !muted;
+      try { localStorage.setItem('zeroClockMuted', muted ? '1' : '0'); } catch (e) { /* 저장 불가 환경 */ }
+      renderSound();
+      ensureAudio();
     });
-    restart.addEventListener('click', () => {
-      message.textContent = '시작 버튼을 눌러 주세요.';
-      start.disabled = false;
-      restart.disabled = true;
-      start.focus();
+    renderSound();
+
+    function flash(cls) {
+      clockEl.classList.remove('flash', 'shake');
+      void clockEl.offsetWidth; // 같은 애니메이션을 다시 재생하기 위한 리플로우
+      clockEl.classList.add(cls);
+    }
+
+    // ---- 랭킹: 공유(Apps Script) 또는 이 브라우저(localStorage) ----
+    const RANK_KEY = 'zeroClockRanking';
+    function cleanName(s) { return String(s).replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 10); }
+    function localRank() {
+      try { return JSON.parse(localStorage.getItem(RANK_KEY)) || []; } catch (e) { return []; }
+    }
+    function addLocalRank(name, sc) {
+      const list = localRank();
+      const mine = list.find(r => r.name === name);
+      if (mine) { if (sc > mine.score) mine.score = sc; } else { list.push({ name, score: sc }); }
+      list.sort((a, b) => b.score - a.score);
+      try { localStorage.setItem(RANK_KEY, JSON.stringify(list.slice(0, 50))); } catch (e) { /* 저장 불가 환경 */ }
+    }
+    async function loadRanking() {
+      if (RANKING_URL) {
+        try {
+          const res = await fetch(RANKING_URL, { cache: 'no-store' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          if (!Array.isArray(data)) throw new Error('응답 형식이 달라요');
+          return { list: data, shared: true };
+        } catch (e) {
+          console.warn('공유 랭킹 연결 실패:', e);
+          return { list: localRank(), shared: false, failed: true, reason: String((e && e.message) || e) };
+        }
+      }
+      return { list: localRank(), shared: false, failed: false };
+    }
+    async function submitScore(name, sc) {
+      addLocalRank(name, sc);
+      if (!RANKING_URL || sc <= 0) return;
+      try { await fetch(RANKING_URL, { method: 'POST', body: JSON.stringify({ name, score: sc }) }); } catch (e) { /* 실패해도 게임은 계속 */ }
+    }
+    async function refreshRanking() {
+      const { list, shared, failed, reason } = await loadRanking();
+      $('rankSrc').textContent = shared ? '모든 플레이어의 공유 랭킹' : failed ? '공유 랭킹 연결 실패(' + reason + ') · 이 브라우저의 기록만 표시' : '이 브라우저의 기록 (공유 랭킹 미연결)';
+      $('rankRetry').style.display = failed ? 'inline-block' : 'none';
+      const ol = $('rankList');
+      ol.textContent = '';
+      const top = list.slice(0, 10);
+      if (!top.length) {
+        const li = document.createElement('li');
+        li.className = 'empty';
+        li.textContent = '아직 기록이 없어요.';
+        ol.appendChild(li);
+        return;
+      }
+      for (const r of top) {
+        const li = document.createElement('li');
+        if (r.name === nick) li.className = 'me';
+        li.textContent = cleanName(r.name) + ' ';
+        const sp = document.createElement('span');
+        sp.textContent = Number(r.score) + '회';
+        li.appendChild(sp);
+        ol.appendChild(li);
+      }
+    }
+    try { nick = cleanName(localStorage.getItem('zeroClockNick') || ''); } catch (e) { nick = ''; }
+    nickEl.value = nick;
+
+    function loadBest() {
+      try { return Number(localStorage.getItem('zeroClockBest')) || 0; } catch (e) { return 0; }
+    }
+    function saveBest(v) {
+      try { localStorage.setItem('zeroClockBest', String(v)); } catch (e) { /* 저장 불가 환경 */ }
+    }
+    let best = loadBest();
+    $('best').textContent = best;
+
+    function say(text, kind) {
+      msgEl.textContent = text;
+      msgEl.className = kind || '';
+    }
+
+    // 수식 파서: eval 없이 + - * / ( ) 와 정수만 허용한다.
+    function tokenize(src) {
+      const s = src.replace(/×/g, '*').replace(/÷/g, '/').replace(/[−–]/g, '-').replace(/\s+/g, '');
+      if (!s) throw new Error('수식을 입력해 주세요.');
+      if (s.length > 150) throw new Error('수식이 너무 길어요.');
+      const out = [];
+      for (let i = 0; i < s.length;) {
+        const c = s[i];
+        if (/\d/.test(c)) {
+          let j = i;
+          while (j < s.length && /\d/.test(s[j])) j++;
+          if (s[j] === '.') throw new Error('정수만 사용할 수 있어요.');
+          out.push({ t: 'n', v: parseInt(s.slice(i, j), 10) });
+          i = j;
+        } else if ('+-*/()'.includes(c)) {
+          out.push({ t: c });
+          i++;
+        } else {
+          throw new Error('사용할 수 없는 문자: ' + c);
+        }
+      }
+      return out;
+    }
+
+    // 정확한 분수 계산(BigInt): 8/(27*27*…)처럼 0에 아주 가까운 값이 0으로 오인되지 않게 한다.
+    const gcd = (a, b) => { a = a < 0n ? -a : a; b = b < 0n ? -b : b; while (b) [a, b] = [b, a % b]; return a; };
+    const frac = (n, d) => { const g = gcd(n, d) || 1n; return d < 0n ? { n: -n / g, d: -d / g } : { n: n / g, d: d / g }; };
+    const EXACT = {
+      num: v => ({ n: BigInt(v), d: 1n }),
+      add: (a, b) => frac(a.n * b.d + b.n * a.d, a.d * b.d),
+      sub: (a, b) => frac(a.n * b.d - b.n * a.d, a.d * b.d),
+      mul: (a, b) => frac(a.n * b.n, a.d * b.d),
+      div: (a, b) => frac(a.n * b.d, a.d * b.n),
+      neg: a => ({ n: -a.n, d: a.d }),
+      isZero: a => a.n === 0n
+    };
+    // 임의의 실수 값으로 꼼수(값과 상관없이 항상 0) 여부를 검사할 때 쓴다.
+    const FLOAT = {
+      num: v => v,
+      add: (a, b) => a + b, sub: (a, b) => a - b, mul: (a, b) => a * b, div: (a, b) => a / b,
+      neg: a => -a,
+      isZero: a => Math.abs(a) < 1e-9
+    };
+
+    // ops: 계산 방식(EXACT/FLOAT). onOp: 연산 결과가 나올 때마다 호출되는 콜백(부분식 검사용).
+    function evaluate(tokens, ops = EXACT, onOp = null) {
+      let p = 0;
+      const out = v => { if (onOp) onOp(v); return v; };
+      const peek = () => tokens[p] && tokens[p].t;
+      function expr() {
+        let v = term();
+        while (peek() === '+' || peek() === '-') {
+          const op = tokens[p++].t, r = term();
+          v = out(op === '+' ? ops.add(v, r) : ops.sub(v, r));
+        }
+        return v;
+      }
+      function term() {
+        let v = factor();
+        while (peek() === '*' || peek() === '/') {
+          const op = tokens[p++].t, r = factor();
+          if (op === '/') {
+            if (ops.isZero(r)) throw new Error('0으로 나눌 수 없어요.');
+            v = out(ops.div(v, r));
+          } else {
+            v = out(ops.mul(v, r));
+          }
+        }
+        return v;
+      }
+      function factor() {
+        const k = peek();
+        if (k === '-') { p++; return out(ops.neg(factor())); }
+        if (k === 'n') return ops.num(tokens[p++].v);
+        if (k === '(') {
+          p++;
+          const v = expr();
+          if (peek() !== ')') throw new Error('괄호가 닫히지 않았어요.');
+          p++;
+          return v;
+        }
+        throw new Error('수식이 올바르지 않아요.');
+      }
+      const v = expr();
+      if (p < tokens.length) throw new Error('수식이 올바르지 않아요.');
+      return v;
+    }
+
+    // 시계 숫자는 통째로(27, 30) 쓰거나 낱자리(2, 7, 3)로 쓸 수 있다. 0은 못 쓰고, 다 쓸 필요도 없다.
+    // 쓸 수 있는 숫자가 2개 이하로 너무 적은 시각(03:08 등)은 0이 아닌 숫자를 이어 붙인 두 자리 수(38, 83)도 허용한다.
+    function allowedNumbers() {
+      const set = new Set([hour, minute]);
+      for (const ch of pad2(hour) + pad2(minute)) if (ch !== '0') set.add(Number(ch));
+      if (set.size <= 2) {
+        const digits = (pad2(hour) + pad2(minute)).split('').map(Number).filter(d => d > 0);
+        digits.forEach((a, i) => digits.forEach((b, j) => { if (i !== j) set.add(a * 10 + b); }));
+      }
+      return set;
+    }
+    function checkNumbers(tokens) {
+      const allowed = allowedNumbers();
+      for (const t of tokens) {
+        if (t.t === 'n' && !allowed.has(t.v)) throw new Error(t.v + '은(는) 쓸 수 없어요. 쓸 수 있는 숫자: ' + [...allowed].join(', '));
+      }
+    }
+
+    // 6-6+18-18처럼 숫자 값과 상관없이 항상 0이 되는 식(꼼수)인지 검사한다.
+    function isTrivial(tokens) {
+      const values = [...new Set(tokens.filter(t => t.t === 'n').map(t => t.v))];
+      for (let trial = 0; trial < 3; trial++) {
+        const map = new Map(values.map(v => [v, 1 + Math.random() * 50]));
+        try {
+          const r = evaluate(tokens.map(t => t.t === 'n' ? { t: 'n', v: map.get(t.v) } : t), FLOAT);
+          if (Math.abs(r) > 1e-9) return false;
+        } catch (e) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // 정답 뒤에 +6-6, *(6-6) 같은 군더더기를 붙이는 꼼수: 결과(맨 마지막 연산)를 뺀 부분식 중 정확히 0인 것이 있는지 검사한다.
+    function hasZeroPart(tokens) {
+      const results = [];
+      evaluate(tokens, EXACT, v => results.push(v));
+      return results.slice(0, -1).some(v => EXACT.isZero(v));
+    }
+
+    // h*m-m-m-…-m 처럼 곱셈 a*b 를 b(또는 a)를 a(또는 b)번 빼서 지우는 만능 공식인지 검사한다.
+    function hasRepeatFormula(tokens) {
+      // (5)*4 처럼 숫자 하나를 감싼 괄호는 벗겨서 본다.
+      const t = [];
+      for (let i = 0; i < tokens.length; i++) {
+        if (tokens[i].t === '(' && tokens[i + 1] && tokens[i + 1].t === 'n' && tokens[i + 2] && tokens[i + 2].t === ')') { t.push(tokens[i + 1]); i += 2; } else { t.push(tokens[i]); }
+      }
+      // 곱셈·나눗셈에 붙어 있지 않고 혼자 더해지거나 빼지는 숫자만 센다. (32-2*2*2*2*2 같은 순수 곱셈은 해당 없음)
+      const alone = new Map();
+      t.forEach((x, i) => {
+        if (x.t !== 'n') return;
+        const prev = t[i - 1] && t[i - 1].t, next = t[i + 1] && t[i + 1].t;
+        if (prev === '*' || prev === '/' || next === '*' || next === '/') return;
+        alone.set(x.v, (alone.get(x.v) || 0) + 1);
+      });
+      for (let i = 0; i + 2 < t.length; i++) {
+        if (t[i].t === 'n' && t[i + 1].t === '*' && t[i + 2].t === 'n') {
+          const a = t[i].v, b = t[i + 2].v;
+          if ((alone.get(b) || 0) >= a || (alone.get(a) || 0) >= b) return true;
+        }
+      }
+      return false;
+    }
+
+    function pad2(n) { return String(n).padStart(2, '0'); }
+
+    // 출제 검증: 시계 숫자만으로 "꼼수 아닌 정답"이 MAX_LEAVES개 이하의 숫자로 존재하는지 탐색한다.
+    // 각 식을 (실제 값, 임의 값 2세트)로 평가해 두면, 임의 값에서도 0이면 항상 0인 꼼수로 구분된다.
+    // 찾은 후보는 실제 판정 로직(isAcceptable)으로 다시 걸러서, 만능 공식으로만 풀리는 시각은 제외한다.
+    const MAX_LEAVES = 7, HALF = 4;
+    const solvableCache = new Map();
+
+    function isAcceptable(expr) {
+      try {
+        const k = tokenize(expr);
+        checkNumbers(k);
+        return EXACT.isZero(evaluate(k)) && !hasZeroPart(k) && !isTrivial(k) && !hasRepeatFormula(k);
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function isSolvable(h, m) {
+      const cacheKey = h + ':' + m;
+      if (solvableCache.has(cacheKey)) return solvableCache.get(cacheKey);
+      const saved = [hour, minute];
+      hour = h; minute = m; // checkNumbers 가 현재 시각을 기준으로 하므로 잠시 바꿔 둔다
+      const vals = [...allowedNumbers()];
+      const rnd = [0, 1].map(() => vals.map(() => 1 + Math.random() * 50));
+      const near = (x, y) => Math.abs(x - y) <= 1e-7 * (1 + Math.abs(x) + Math.abs(y));
+      const nonTrivial = (x1, x2) => !near(x1, 0) || !near(x2, 0);
+      const bucketOf = x => Math.round(x * 1e4);
+
+      // levels[n]: 숫자 n개로 만들 수 있는 식들 (같은 값·같은 형태는 하나로 합친다)
+      const levels = [null, vals.map((x, i) => ({ v: [x, rnd[0][i], rnd[1][i]], s: String(x) }))];
+      for (let n = 2; n <= HALF; n++) {
+        const seen = new Map();
+        for (let i = 1; i <= n >> 1; i++) {
+          for (const a of levels[i]) for (const b of levels[n - i]) {
+            const add = (f, s) => {
+              const v = [0, 1, 2].map(k => f(a.v[k], b.v[k]));
+              if (!v.every(Number.isFinite)) return;
+              const key = v.map(x => Math.round(x * 1e5)).join('|');
+              if (!seen.has(key)) seen.set(key, { v, s });
+            };
+            add((x, y) => x + y, '(' + a.s + '+' + b.s + ')');
+            add((x, y) => x - y, '(' + a.s + '-' + b.s + ')');
+            add((x, y) => y - x, '(' + b.s + '-' + a.s + ')');
+            add((x, y) => x * y, '(' + a.s + '*' + b.s + ')');
+            if (b.v.every(x => Math.abs(x) > 1e-9)) add((x, y) => x / y, '(' + a.s + '/' + b.s + ')');
+            if (a.v.every(x => Math.abs(x) > 1e-9)) add((x, y) => y / x, '(' + b.s + '/' + a.s + ')');
+          }
+        }
+        levels[n] = [...seen.values()];
+      }
+
+      let found = false;
+      // 한 덩어리가 이미 0인 경우 (예: 18-6-6-6)
+      for (let n = 1; n <= HALF && !found; n++) {
+        found = levels[n].some(e => near(e.v[0], 0) && nonTrivial(e.v[1], e.v[2]) && isAcceptable(e.s));
+      }
+      // 두 덩어리를 합치거나 빼서 0이 되는 경우 (a - b = 0, a + b = 0)
+      for (let j = 1; j <= HALF && !found; j++) {
+        const index = new Map();
+        for (const e of levels[j]) {
+          const k = bucketOf(e.v[0]);
+          if (!index.has(k)) index.set(k, []);
+          index.get(k).push(e);
+        }
+        for (let i = 1; i <= j && i + j <= MAX_LEAVES && !found; i++) {
+          for (const a of levels[i]) {
+            for (const s of [1, -1]) {
+              for (const b of index.get(bucketOf(s * a.v[0])) || []) {
+                if (near(a.v[0], s * b.v[0]) && nonTrivial(a.v[1] - s * b.v[1], a.v[2] - s * b.v[2])
+                    && isAcceptable(s === 1 ? a.s + '-' + b.s : a.s + '+' + b.s)) {
+                  found = true;
+                  break;
+                }
+              }
+              if (found) break;
+            }
+            if (found) break;
+          }
+        }
+      }
+      [hour, minute] = saved;
+      solvableCache.set(cacheKey, found);
+      return found;
+    }
+
+    function pickTime() {
+      let h, m;
+      do {
+        h = 1 + Math.floor(Math.random() * 12);
+        m = 1 + Math.floor(Math.random() * 59);
+      } while ((h === hour && m === minute) || !isSolvable(h, m));
+      hour = h; minute = m;
+      clockEl.textContent = pad2(hour) + ':' + pad2(minute);
+    }
+
+    function nextTime(keepCurrent) {
+      if (!keepCurrent) pickTime();
+      limit = TIME_LIMIT;
+      deadline = Date.now() + limit * 1000;
+      lastSec = -1;
+      clockEl.classList.remove('warn');
+      exprEl.value = '';
+      exprEl.focus();
+    }
+
+    function tick() {
+      const left = Math.max(0, deadline - Date.now());
+      const ratio = left / (limit * 1000);
+      fillEl.style.width = (ratio * 100) + '%';
+      fillEl.className = ratio < 0.25 ? 'low' : '';
+      timeText.textContent = (left / 1000).toFixed(1) + '초 남음 (제한 ' + limit + '초)';
+      const warn = left <= WARN_SECONDS * 1000;
+      clockEl.classList.toggle('warn', warn);
+      const sec = Math.ceil(left / 1000);
+      if (warn && sec <= TICK_SECONDS && sec !== lastSec && left > 0) sfx.tick();
+      lastSec = sec;
+      if (left <= 0) gameOver();
+    }
+
+    function renderHelpers() {
+      $('skip').textContent = '스킵 (' + skipsLeft + ')';
+      $('extra').textContent = '+' + EXTRA_SECONDS + '초 (' + extraLeft + ')';
+      $('skip').disabled = !playing || skipsLeft <= 0;
+      $('extra').disabled = !playing || extraLeft <= 0;
+    }
+
+    function useSkip() {
+      if (!playing || skipsLeft <= 0) return;
+      skipsLeft--;
+      nextTime();
+      say('스킵! 새 시각이에요. (남은 스킵 ' + skipsLeft + '번)');
+      flash('flash');
+      sfx.help();
+      renderHelpers();
+    }
+
+    function useExtra() {
+      if (!playing || extraLeft <= 0) return;
+      extraLeft--;
+      deadline += EXTRA_SECONDS * 1000;
+      limit += EXTRA_SECONDS;
+      say('+' + EXTRA_SECONDS + '초! (남은 횟수 ' + extraLeft + '번)', 'ok');
+      sfx.help();
+      renderHelpers();
+      tick();
+      exprEl.focus();
+    }
+
+    function startGame() {
+      if (!playing) {
+        const name = cleanName(nickEl.value);
+        if (!name) { say('닉네임을 입력해 주세요.', 'bad'); nickEl.focus(); return; }
+        nick = name;
+        nickEl.value = name;
+        try { localStorage.setItem('zeroClockNick', name); } catch (e) { /* 저장 불가 환경 */ }
+      }
+      ensureAudio();
+      score = 0; playing = true; lastSec = -1;
+      skipsLeft = HELP_USES; extraLeft = HELP_USES;
+      renderHelpers();
+      clockEl.classList.remove('warn');
+      $('score').textContent = 0;
+      overEl.style.display = 'none';
+      entryEl.style.display = 'none';
+      exprEl.disabled = false; submitEl.disabled = false;
+      say('시와 분을 써서 0을 만드세요!');
+      nextTime(preview);
+      preview = false;
+      clearInterval(timerId);
+      timerId = setInterval(tick, 100);
+      tick();
+    }
+
+    function gameOver() {
+      playing = false;
+      clearInterval(timerId);
+      exprEl.disabled = true; submitEl.disabled = true;
+      clockEl.classList.remove('warn');
+      renderHelpers();
+      sfx.over();
+      if (score > best) { best = score; saveBest(best); $('best').textContent = best; }
+      $('overText').textContent = '시간 초과! ' + pad2(hour) + ':' + pad2(minute) + ' 에서 멈췄어요. 클리어 ' + score + '회';
+      overEl.style.display = 'block';
+      say('');
+      $('restart').focus();
+      submitScore(nick, score).then(refreshRanking);
+    }
+
+    $('form').addEventListener('submit', e => {
+      e.preventDefault();
+      if (!playing) return;
+      try {
+        const tokens = tokenize(exprEl.value);
+        checkNumbers(tokens);
+        const result = evaluate(tokens);
+        if (EXACT.isZero(result)) {
+          if (hasZeroPart(tokens)) throw new Error('중간에 0이 되는 부분(예: 6-6)이 있는 식은 안 돼요.');
+          if (hasRepeatFormula(tokens)) throw new Error('곱셈을 같은 숫자 반복 뺄셈으로 지우는 식(예: 5*4-4-4-4-4-4)은 안 돼요.');
+          if (isTrivial(tokens)) throw new Error('6-6+18-18처럼 항상 0이 되는 식은 안 돼요.');
+          score++;
+          $('score').textContent = score;
+          say('클리어! ' + exprEl.value + ' = 0', 'ok');
+          nextTime();
+          flash('flash');
+          sfx.clear();
+        } else {
+          const val = Number(result.n) / Number(result.d);
+          const shown = Number.isInteger(val) ? val : val.toFixed(3);
+          say('결과가 ' + shown + ' 이에요. 0이 되어야 해요.', 'bad');
+          flash('shake');
+          sfx.wrong();
+        }
+      } catch (err) {
+        say(err.message, 'bad');
+        flash('shake');
+        sfx.wrong();
+      }
     });
+
+    document.querySelectorAll('[data-ins]').forEach(b => {
+      b.addEventListener('click', () => {
+        if (exprEl.disabled) return;
+        exprEl.value += b.dataset.ins;
+        exprEl.focus();
+      });
+    });
+
+    // 시작 전에도 랜덤 시각을 보여 주고, 첫 문제는 그 시각으로 시작한다.
+    let preview = true;
+    pickTime();
+
+    nickEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); startGame(); } });
+    $('rankRetry').addEventListener('click', refreshRanking);
+    refreshRanking();
+
+    $('skip').addEventListener('click', useSkip);
+    $('extra').addEventListener('click', useExtra);
+    startEl.addEventListener('click', startGame);
+    $('restart').addEventListener('click', startGame);
   </script>
 </body>
 </html>
-
